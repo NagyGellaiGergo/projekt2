@@ -1,20 +1,15 @@
 <script>
-    import { goto } from '$app/navigation';
-    import { onMount } from "svelte";
+    import { isLoggedIn } from '../stores/auth'; // Importáljuk a store-t
 
-    let isLoggedIn = false;
+    let loggedIn = false;
 
-    // Ellenőrizzük, hogy van-e elmentett token
-    onMount(() => {
-        isLoggedIn = !!localStorage.getItem('token');
+    isLoggedIn.subscribe(value => {
+        loggedIn = value;
     });
 
-    // Kilépés függvény
     function logout() {
-        // Töröljük a token-t
         localStorage.removeItem('token');
-        isLoggedIn = false;
-        goto('/login');  // Átirányítjuk a felhasználót a bejelentkezési oldalra
+        isLoggedIn.set(false);
     }
 
 </script>
@@ -26,7 +21,7 @@
             <li>
                 <a href="/">Home</a>
             </li>
-            {#if isLoggedIn}
+            {#if loggedIn}
                 <li>
                     <a href="/" on:click={logout}>Logout</a>
                 </li>

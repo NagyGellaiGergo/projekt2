@@ -1,7 +1,6 @@
 <script>
     import { goto } from "$app/navigation";
-    import { onMount } from "svelte";
-    import { isLoggedIn } from "../stores/auth";
+    import { isLoggedIn } from "../../stores/auth"; // Importáljuk a store-t
 
     let email = "";
     let password = "";
@@ -49,6 +48,7 @@
                 if (contentType && contentType.includes('application/json')) {
                     const data = await response.json();
                     localStorage.setItem("token", data.access_token); // Token mentése
+                    isLoggedIn.set(true); // A bejelentkezett állapot frissítése
                     goto("/dashboard"); // Átirányítás a dashboardra
                 }
             } else {
