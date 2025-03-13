@@ -2,6 +2,7 @@
     import { goto } from "$app/navigation";
     import { isLoggedIn } from "../../stores/auth";
 
+
     let email = "";
     let password = "";
     let errorMessage = "";
@@ -46,9 +47,10 @@
                 const contentType = response.headers.get('content-type');
                 if (contentType && contentType.includes('application/json')) {
                     const data = await response.json();
+                    console.log(data);
                     localStorage.setItem("token", data.access_token);
                     isLoggedIn.set(true);
-                    goto("/dashboard");
+                    await(goto("/dashboard"));
                 }
             } else {
 
@@ -78,6 +80,7 @@
                     console.log('Szöveges válasz:', textResponse);
                     errorMessage = `Hiba történt a bejelentkezés során: ${response.status} ${response.statusText}`;
                 }
+
             }
         } catch (error) {
             console.error('Kérés hiba:', error);
