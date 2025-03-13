@@ -2,20 +2,20 @@
     import { goto } from "$app/navigation";
     import { isLoggedIn } from "../../stores/auth";
 
-
     let email = "";
     let password = "";
     let errorMessage = "";
+    let isLoading = false;
 
     async function login() {
         errorMessage = "";
-        try {
+        isLoading = true;
 
+        try {
             await fetch("http://localhost:8000/sanctum/csrf-cookie", {
                 method: "GET",
                 credentials: "include"
             });
-
 
             const csrfCookie = document.cookie
                 .split('; ')
@@ -30,61 +30,35 @@
                 return;
             }
 
-
             const response = await fetch("http://localhost:8000/login", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-XSRF-TOKEN": csrfToken,
                     "Accept": "application/json",
-                    "X-Requested-With": "XMLHttpRequest"
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-XSRF-TOKEN": csrfToken
                 },
                 credentials: "include",
                 body: JSON.stringify({ email, password })
             });
 
             if (response.ok) {
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('application/json')) {
-                    const data = await response.json();
-                    console.log(data);
-                    localStorage.setItem("token", data.access_token);
-                    isLoggedIn.set(true);
-                    await(goto("/dashboard"));
-                }
+                isLoggedIn.set(true);
+                goto("/dashboard");
             } else {
+                const errorData = await response.json();
 
-                const contentType = response.headers.get('content-type');
-
-                if (contentType && contentType.includes('application/json')) {
-                    try {
-                        const errorData = await response.json();
-                        console.log('Hiba adatok:', errorData);
-
-                        if (errorData.errors) {
-
-                            const errorMessages = Object.values(errorData.errors)
-                                .flat()
-                                .join(', ');
-                            errorMessage = errorMessages;
-                        } else {
-                            errorMessage = errorData.message || 'Bejelentkezés sikertelen';
-                        }
-                    } catch (parseError) {
-                        console.error('JSON parse hiba:', parseError);
-                        errorMessage = `Hiba történt a válasz feldolgozása során: ${response.status}`;
-                    }
+                if (errorData.errors) {
+                    errorMessage = Object.values(errorData.errors).flat().join(', ');
                 } else {
-
-                    const textResponse = await response.text();
-                    console.log('Szöveges válasz:', textResponse);
-                    errorMessage = `Hiba történt a bejelentkezés során: ${response.status} ${response.statusText}`;
+                    errorMessage = errorData.message || 'Bejelentkezés sikertelen';
                 }
-
             }
         } catch (error) {
-            console.error('Kérés hiba:', error);
+            console.error('Hálózati hiba:', error);
             errorMessage = 'Hálózati hiba történt';
+        } finally {
+            isLoading = false;
         }
     }
 </script>
@@ -101,7 +75,9 @@
         <label for="password">Jelszó:</label>
         <input id="password" type="password" bind:value={password} required />
 
-        <button type="submit">Bejelentkezés</button>
+        <button type="submit" disabled={isLoading}>
+            {isLoading ? 'Bejelentkezés...' : 'Bejelentkezés'}
+        </button>
     </form>
 
     <p>Nincs még fiókod? <a href="/register">Regisztrálj!</a></p>
@@ -135,6 +111,10 @@
         border-radius: 4px;
         cursor: pointer;
     }
-    button:hover { background: #0056b3; }
+    button:hover:not([disabled]) { background: #0056b3; }
+    button[disabled] {
+        background: #cccccc;
+        cursor: not-allowed;
+    }
     .error { color: red; text-align: center; }
 </style>
