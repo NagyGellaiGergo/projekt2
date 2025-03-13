@@ -1,5 +1,5 @@
 <script>
-    import { isLoggedIn } from '../stores/auth'; // Importáljuk a store-t
+    import { isLoggedIn } from '../stores/auth';
 
     let loggedIn = false;
 
@@ -23,10 +23,10 @@
             </li>
             {#if loggedIn}
                 <li>
-                    <a href="/" on:click={logout}>Logout</a>
+                    <a href="/dashboard">Dashboard</a>
                 </li>
                 <li>
-                    <a href="/dashboard">Dashboard</a>
+                    <a href="/" on:click={logout}>Logout</a>
                 </li>
             {:else}
                 <li>
@@ -70,6 +70,5 @@
     h1{
         margin: 0;
     }
-
 </style>
 

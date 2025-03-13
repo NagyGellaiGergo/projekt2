@@ -56,7 +56,7 @@
 
                 goto('/login');
             } else {
-                // Hiba esetén
+
                 const contentType = response.headers.get('content-type');
                 console.log('Hiba Content-Type:', contentType);
 
@@ -79,7 +79,7 @@
                         errorMessage = `Hiba történt a válasz feldolgozása során: ${response.status}`;
                     }
                 } else {
-                    // Ha nincs JSON válasz
+
                     const textResponse = await response.text();
                     console.log('Szöveges válasz:', textResponse);
                     errorMessage = `Hiba történt a regisztráció során: ${response.status} ${response.statusText}`;

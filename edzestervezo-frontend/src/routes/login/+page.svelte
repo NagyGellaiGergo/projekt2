@@ -1,6 +1,6 @@
 <script>
     import { goto } from "$app/navigation";
-    import { isLoggedIn } from "../../stores/auth"; // Importáljuk a store-t
+    import { isLoggedIn } from "../../stores/auth";
 
     let email = "";
     let password = "";
@@ -9,13 +9,13 @@
     async function login() {
         errorMessage = "";
         try {
-            // 1. CSRF token lekérése
+
             await fetch("http://localhost:8000/sanctum/csrf-cookie", {
                 method: "GET",
                 credentials: "include"
             });
 
-            // 2. CSRF token kiolvasása a sütiből
+
             const csrfCookie = document.cookie
                 .split('; ')
                 .find(row => row.startsWith('XSRF-TOKEN='));
@@ -29,12 +29,12 @@
                 return;
             }
 
-            // 3. Bejelentkezési kérés
+
             const response = await fetch("http://localhost:8000/login", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-XSRF-TOKEN": csrfToken, // CSRF token hozzáadása
+                    "X-XSRF-TOKEN": csrfToken,
                     "Accept": "application/json",
                     "X-Requested-With": "XMLHttpRequest"
                 },
@@ -42,17 +42,16 @@
                 body: JSON.stringify({ email, password })
             });
 
-            // 4. Válasz feldolgozása
             if (response.ok) {
                 const contentType = response.headers.get('content-type');
                 if (contentType && contentType.includes('application/json')) {
                     const data = await response.json();
-                    localStorage.setItem("token", data.access_token); // Token mentése
-                    isLoggedIn.set(true); // A bejelentkezett állapot frissítése
-                    goto("/dashboard"); // Átirányítás a dashboardra
+                    localStorage.setItem("token", data.access_token);
+                    isLoggedIn.set(true);
+                    goto("/dashboard");
                 }
             } else {
-                // Hiba esetén
+
                 const contentType = response.headers.get('content-type');
                 console.log('Hiba Content-Type:', contentType);
 
@@ -62,7 +61,7 @@
                         console.log('Hiba adatok:', errorData);
 
                         if (errorData.errors) {
-                            // Hibák összefűzése
+
                             const errorMessages = Object.values(errorData.errors)
                                 .flat()
                                 .join(', ');
@@ -75,7 +74,7 @@
                         errorMessage = `Hiba történt a válasz feldolgozása során: ${response.status}`;
                     }
                 } else {
-                    // Ha nincs JSON válasz
+
                     const textResponse = await response.text();
                     console.log('Szöveges válasz:', textResponse);
                     errorMessage = `Hiba történt a bejelentkezés során: ${response.status} ${response.statusText}`;
