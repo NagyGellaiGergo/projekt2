@@ -53,7 +53,6 @@
             } else {
 
                 const contentType = response.headers.get('content-type');
-                console.log('Hiba Content-Type:', contentType);
 
                 if (contentType && contentType.includes('application/json')) {
                     try {
