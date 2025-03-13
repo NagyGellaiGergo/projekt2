@@ -1,5 +1,21 @@
 <script>
+    import { goto } from '$app/navigation';
+    import { onMount } from "svelte";
 
+    let isLoggedIn = false;
+
+    // Ellenőrizzük, hogy van-e elmentett token
+    onMount(() => {
+        isLoggedIn = !!localStorage.getItem('token');
+    });
+
+    // Kilépés függvény
+    function logout() {
+        // Töröljük a token-t
+        localStorage.removeItem('token');
+        isLoggedIn = false;
+        goto('/login');  // Átirányítjuk a felhasználót a bejelentkezési oldalra
+    }
 
 </script>
 
@@ -10,12 +26,21 @@
             <li>
                 <a href="/">Home</a>
             </li>
-            <li>
-                <a href="/login">Login</a>
-            </li>
-            <li>
-                <a href="/register">Register</a>
-            </li>
+            {#if isLoggedIn}
+                <li>
+                    <a href="/" on:click={logout}>Logout</a>
+                </li>
+                <li>
+                    <a href="/dashboard">Dashboard</a>
+                </li>
+            {:else}
+                <li>
+                    <a href="/login">Login</a>
+                </li>
+                <li>
+                    <a href="/register">Register</a>
+                </li>
+            {/if}
         </ul>
     </div>
 </nav>

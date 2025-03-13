@@ -1,6 +1,7 @@
 <script>
-    import { onMount } from "svelte";
     import { goto } from "$app/navigation";
+    import { onMount } from "svelte";
+    import { isLoggedIn } from "../stores/auth";
 
     let email = "";
     let password = "";
@@ -9,24 +10,80 @@
     async function login() {
         errorMessage = "";
         try {
-            const res = await fetch("http://localhost:8000/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
-                credentials: 'include'
+            // 1. CSRF token lekérése
+            await fetch("http://localhost:8000/sanctum/csrf-cookie", {
+                method: "GET",
+                credentials: "include"
             });
 
-            const data = await res.json();
+            // 2. CSRF token kiolvasása a sütiből
+            const csrfCookie = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('XSRF-TOKEN='));
 
-            if (res.ok) {
-                localStorage.setItem('token', data.token);
-                goto('/dashboard');
-            }else{
-                errorMessage= data.message || 'Hibás bejelentkezés';
+            const csrfToken = csrfCookie
+                ? decodeURIComponent(csrfCookie.split('=')[1])
+                : '';
+
+            if (!csrfToken) {
+                errorMessage = 'CSRF token nem található';
+                return;
             }
 
-        } catch (err) {
-            errorMessage = "Hálózati hiba!";
+            // 3. Bejelentkezési kérés
+            const response = await fetch("http://localhost:8000/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-XSRF-TOKEN": csrfToken, // CSRF token hozzáadása
+                    "Accept": "application/json",
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                credentials: "include",
+                body: JSON.stringify({ email, password })
+            });
+
+            // 4. Válasz feldolgozása
+            if (response.ok) {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    localStorage.setItem("token", data.access_token); // Token mentése
+                    goto("/dashboard"); // Átirányítás a dashboardra
+                }
+            } else {
+                // Hiba esetén
+                const contentType = response.headers.get('content-type');
+                console.log('Hiba Content-Type:', contentType);
+
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        const errorData = await response.json();
+                        console.log('Hiba adatok:', errorData);
+
+                        if (errorData.errors) {
+                            // Hibák összefűzése
+                            const errorMessages = Object.values(errorData.errors)
+                                .flat()
+                                .join(', ');
+                            errorMessage = errorMessages;
+                        } else {
+                            errorMessage = errorData.message || 'Bejelentkezés sikertelen';
+                        }
+                    } catch (parseError) {
+                        console.error('JSON parse hiba:', parseError);
+                        errorMessage = `Hiba történt a válasz feldolgozása során: ${response.status}`;
+                    }
+                } else {
+                    // Ha nincs JSON válasz
+                    const textResponse = await response.text();
+                    console.log('Szöveges válasz:', textResponse);
+                    errorMessage = `Hiba történt a bejelentkezés során: ${response.status} ${response.statusText}`;
+                }
+            }
+        } catch (error) {
+            console.error('Kérés hiba:', error);
+            errorMessage = 'Hálózati hiba történt';
         }
     }
 </script>
@@ -37,14 +94,13 @@
         <p class="error">{errorMessage}</p>
     {/if}
     <form on:submit|preventDefault={login}>
+        <label for="email">Email:</label>
+        <input id="email" type="email" bind:value={email} required />
 
-        <label>Email:</label>
-        <input type="email" bind:value={email} required />
+        <label for="password">Jelszó:</label>
+        <input id="password" type="password" bind:value={password} required />
 
-        <label>Jelszó:</label>
-        <input type="password" bind:value={password} required />
-
-        <button type="submit">Login</button>
+        <button type="submit">Bejelentkezés</button>
     </form>
 
     <p>Nincs még fiókod? <a href="/register">Regisztrálj!</a></p>
