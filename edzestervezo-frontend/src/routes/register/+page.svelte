@@ -9,28 +9,35 @@
     let errorMessage = '';
 
     async function register() {
-        errorMessage = ''; // Hibaüzenet törlése
+        errorMessage = '';
         try {
-            // 1. CSRF token lekérése
             await fetch('http://localhost:8000/sanctum/csrf-cookie', {
                 method: 'GET',
-                credentials: 'include' // Sütik küldése a kéréssel
+                credentials: 'include'
             });
 
-            // 2. CSRF token kiolvasása a sütiből
-            const csrfToken = document.cookie
+            const csrfCookie = document.cookie
                 .split('; ')
-                .find(row => row.startsWith('XSRF-TOKEN='))
-                ?.split('=')[1];
+                .find(row => row.startsWith('XSRF-TOKEN='));
 
-            // 3. Regisztrációs kérés
+            const csrfToken = csrfCookie
+                ? decodeURIComponent(csrfCookie.split('=')[1])
+                : '';
+
+            if (!csrfToken) {
+                errorMessage = 'CSRF token nem található';
+                return;
+            }
+
             const response = await fetch('http://localhost:8000/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-XSRF-TOKEN': csrfToken // CSRF token hozzáadása
+                    'X-XSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
-                credentials: 'include', // Sütik küldése a kéréssel
+                credentials: 'include',
                 body: JSON.stringify({
                     name,
                     email,
@@ -39,18 +46,48 @@
                 })
             });
 
-            // 4. Válasz feldolgozása
+
             if (response.ok) {
-                const data = await response.json();
-                console.log('Sikeres regisztráció!', data);
-                goto('/login'); // Átirányítás a login oldalra
+
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                }
+
+                goto('/login');
             } else {
-                const data = await response.json();
-                errorMessage = data.message || 'Regisztráció sikertelen';
+                // Hiba esetén
+                const contentType = response.headers.get('content-type');
+                console.log('Hiba Content-Type:', contentType);
+
+                if (contentType && contentType.includes('application/json')) {
+                    try {
+                        const errorData = await response.json();
+                        console.log('Hiba adatok:', errorData);
+
+                        if (errorData.errors) {
+
+                            const errorMessages = Object.values(errorData.errors)
+                                .flat()
+                                .join(', ');
+                            errorMessage = errorMessages;
+                        } else {
+                            errorMessage = errorData.message || 'Regisztráció sikertelen';
+                        }
+                    } catch (parseError) {
+                        console.error('JSON parse hiba:', parseError);
+                        errorMessage = `Hiba történt a válasz feldolgozása során: ${response.status}`;
+                    }
+                } else {
+                    // Ha nincs JSON válasz
+                    const textResponse = await response.text();
+                    console.log('Szöveges válasz:', textResponse);
+                    errorMessage = `Hiba történt a regisztráció során: ${response.status} ${response.statusText}`;
+                }
             }
         } catch (error) {
+            console.error('Kérés hiba:', error);
             errorMessage = 'Hálózati hiba történt';
-            console.error(error);
         }
     }
 </script>
@@ -61,17 +98,17 @@
         <p class="error">{errorMessage}</p>
     {/if}
     <form on:submit|preventDefault={register}>
-        <label>Név:</label>
-        <input type="text" bind:value={name} required />
+        <label for="name">Név:</label>
+        <input id="name" type="text" bind:value={name} required />
 
-        <label>Email:</label>
-        <input type="email" bind:value={email} required />
+        <label for="email">Email:</label>
+        <input id="email" type="email" bind:value={email} required />
 
-        <label>Jelszó:</label>
-        <input type="password" bind:value={password} required />
+        <label for="password">Jelszó:</label>
+        <input id="password" type="password" bind:value={password} required />
 
-        <label>Jelszó megerősítés:</label>
-        <input type="password" bind:value={password_confirmation} required />
+        <label for="password_confirmation">Jelszó megerősítés:</label>
+        <input id="password_confirmation" type="password" bind:value={password_confirmation} required />
 
         <button type="submit">Regisztráció</button>
     </form>
