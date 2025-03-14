@@ -1,6 +1,6 @@
 <script>
     import { goto } from '$app/navigation';
-    import { onMount } from 'svelte';
+    import { successToast, errorToast } from '$lib/toast';
 
     let name = '';
     let email = '';
@@ -26,6 +26,7 @@
 
             if (!csrfToken) {
                 errorMessage = 'CSRF token nem található';
+                errorToast(errorMessage);
                 return;
             }
 
@@ -42,7 +43,7 @@
                     name,
                     email,
                     password,
-                    password_confirmation
+                    password_confirmation: password_confirmation
                 })
             });
 
@@ -53,7 +54,7 @@
                 if (contentType && contentType.includes('application/json')) {
                     const data = await response.json();
                 }
-
+                successToast('Sikeres regisztráció!');
                 goto('/login');
             } else {
 

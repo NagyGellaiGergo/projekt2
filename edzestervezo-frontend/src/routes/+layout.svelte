@@ -1,5 +1,7 @@
 <script>
     import { isLoggedIn } from '../stores/auth';
+    import {SvelteToast} from "@zerodevx/svelte-toast";
+    import { successToast} from '$lib/toast';
 
     let loggedIn = false;
 
@@ -9,6 +11,7 @@
 
     function logout() {
         localStorage.removeItem('token');
+        successToast('Sikeres kijelentkezés!');
         isLoggedIn.set(false);
     }
 
@@ -40,6 +43,7 @@
     </div>
 </nav>
 
+<SvelteToast />
 <slot />
 
 <style>

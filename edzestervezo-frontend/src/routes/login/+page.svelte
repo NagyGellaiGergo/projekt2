@@ -1,6 +1,7 @@
 <script>
     import { goto } from "$app/navigation";
     import { isLoggedIn } from "../../stores/auth";
+    import { successToast, errorToast } from '$lib/toast';
 
     let email = "";
     let password = "";
@@ -44,19 +45,23 @@
 
             if (response.ok) {
                 isLoggedIn.set(true);
+                successToast('Sikeres bejelentkezés!');
                 goto("/dashboard");
             } else {
                 const errorData = await response.json();
 
                 if (errorData.errors) {
                     errorMessage = Object.values(errorData.errors).flat().join(', ');
+                    errorToast(errorMessage);
                 } else {
                     errorMessage = errorData.message || 'Bejelentkezés sikertelen';
+                    errorToast(errorMessage);
                 }
             }
         } catch (error) {
             console.error('Hálózati hiba:', error);
             errorMessage = 'Hálózati hiba történt';
+            errorToast(errorMessage);
         } finally {
             isLoading = false;
         }

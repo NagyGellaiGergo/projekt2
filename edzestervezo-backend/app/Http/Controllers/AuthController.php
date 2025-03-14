@@ -6,10 +6,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Rules\ValidEmailDomain;
 
 class AuthController extends Controller
 {
-    // Bejelentkezési metódus
+    
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -30,12 +31,12 @@ class AuthController extends Controller
         ]);
     }
 
-    // Regisztrációs metódus
+    
     public function register(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'email' => 'required|string|email:rfc, dns|max:255|unique:users, new ValidEmailDomain',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
