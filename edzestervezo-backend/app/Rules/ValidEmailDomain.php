@@ -1,3 +1,5 @@
+<?php
+
 namespace App\Rules;
 
 use Illuminate\Contracts\Validation\Rule;
@@ -16,3 +18,4 @@ class ValidEmailDomain implements Rule
         return 'Az e-mail cím domain része nem létezik.';
     }
 }
+
